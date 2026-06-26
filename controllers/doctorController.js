@@ -1,19 +1,15 @@
 const getDoctorsCollection = require("../collections/doctorsCollection");
+const { ObjectId } = require("mongodb");
 
 const getAllDoctors = async (req, res) => {
   try {
     const doctorsCollection = await getDoctorsCollection();
 
-    // 1. Grab query parameters sent by the frontend (e.g., ?search=john&sort=feeAsc)
     const { search, sort, page = 1, limit = 6 } = req.query;
 
-    // 2. Build the Search Query
-    // We ONLY want to show doctors who are officially "Verified" by the Admin
     let query = { verificationStatus: "Verified" };
 
     if (search) {
-      // $or allows us to search by EITHER name OR specialization
-      // $regex and $options: "i" make the search case-insensitive
       query.$or = [
         { doctorName: { $regex: search, $options: "i" } },
         { specialization: { $regex: search, $options: "i" } },
@@ -55,4 +51,35 @@ const getAllDoctors = async (req, res) => {
   }
 };
 
-module.exports = { getAllDoctors };
+const getDoctorById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const doctorsCollection = await getDoctorsCollection();
+
+    if (!ObjectId.isValid(id)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid doctor ID" });
+    }
+
+    const doctor = await doctorsCollection.findOne({ _id: new ObjectId(id) });
+
+    if (!doctor) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Doctor not found" });
+    }
+
+    res.status(200).json({ success: true, data: doctor });
+  } catch (error) {
+    console.error("Fetch Doctor By ID Error:", error);
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Server error fetching doctor details",
+      });
+  }
+};
+
+module.exports = { getAllDoctors, getDoctorById };
