@@ -9,6 +9,7 @@ const connectDB = require("./config/db");
 const healthRoutes = require("./routes/healthRoutes");
 const doctorRoutes = require("./routes/doctorRoutes");
 
+
 const app = express();
 
 app.use(cors());
