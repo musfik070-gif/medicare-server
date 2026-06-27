@@ -1,10 +1,17 @@
 const express = require("express");
 const router = express.Router();
-const { getAllPaymentsAdmin } = require("../controllers/paymentController");
+const {
+  getAllPaymentsAdmin,
+  processPayment,
+} = require("../controllers/paymentController");
 const verifyToken = require("../middleware/verifyToken");
 const verifyAdmin = require("../middleware/verifyAdmin");
+const verifyPatient = require("../middleware/verifyPatient");
 
-// Protected Admin Route
+// Admin Routes
 router.get("/admin/all", verifyToken, verifyAdmin, getAllPaymentsAdmin);
+
+// Patient Routes
+router.post("/process", verifyToken, verifyPatient, processPayment);
 
 module.exports = router;
