@@ -1,3 +1,4 @@
+const { ObjectId } = require("mongodb");
 const getAppointmentsCollection = require("../collections/appointmentsCollection");
 
 // Admin: Get ALL appointments across the platform
@@ -41,4 +42,40 @@ const getDoctorAppointments = async (req, res) => {
   }
 };
 
-module.exports = { getAllAppointmentsAdmin, getDoctorAppointments };
+// Doctor: Update appointment status (Approve, Complete, etc.)
+const updateAppointmentStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const appointmentsCollection = await getAppointmentsCollection();
+    const result = await appointmentsCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { status } },
+    );
+
+    if (result.modifiedCount > 0) {
+      res.status(200).json({
+        success: true,
+        message: `Appointment status updated to ${status}`,
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: "Failed to update status or no changes made.",
+      });
+    }
+  } catch (error) {
+    console.error("Update Appointment Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error updating appointment",
+    });
+  }
+};
+
+module.exports = {
+  getAllAppointmentsAdmin,
+  getDoctorAppointments,
+  updateAppointmentStatus,
+};
