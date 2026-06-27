@@ -141,10 +141,44 @@ const bookAppointment = async (req, res) => {
   }
 };
 
+// Doctor: Add a prescription and mark appointment as Completed
+const addPrescription = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { prescription } = req.body;
+
+    const appointmentsCollection = await getAppointmentsCollection();
+
+    const result = await appointmentsCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { prescription, status: "Completed" } },
+    );
+
+    if (result.modifiedCount > 0) {
+      res.status(200).json({
+        success: true,
+        message: "Prescription saved and appointment completed!",
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: "Failed to save prescription. No changes made.",
+      });
+    }
+  } catch (error) {
+    console.error("Prescription Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error saving prescription.",
+    });
+  }
+};
+
 module.exports = {
   getAllAppointmentsAdmin,
   getDoctorAppointments,
   updateAppointmentStatus,
   getPatientAppointments,
   bookAppointment,
+  addPrescription,
 };

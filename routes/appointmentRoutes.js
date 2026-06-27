@@ -6,6 +6,7 @@ const {
   updateAppointmentStatus,
   getPatientAppointments,
   bookAppointment,
+  addPrescription,
 } = require("../controllers/appointmentController");
 const verifyToken = require("../middleware/verifyToken");
 const verifyAdmin = require("../middleware/verifyAdmin");
@@ -27,6 +28,12 @@ router.patch(
   verifyToken,
   verifyDoctor,
   updateAppointmentStatus,
+);
+router.patch(
+  "/doctor/:id/prescription",
+  verifyToken,
+  verifyDoctor,
+  addPrescription,
 );
 
 // Patient Routes
