@@ -64,4 +64,25 @@ const processPayment = async (req, res) => {
   }
 };
 
-module.exports = { getAllPaymentsAdmin, processPayment };
+// Patient: Get own payment history
+const getPatientPayments = async (req, res) => {
+  try {
+    const patientEmail = req.user.email;
+    const paymentsCollection = await getPaymentsCollection();
+
+    const payments = await paymentsCollection
+      .find({ patientEmail })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    res.status(200).json({ success: true, data: payments });
+  } catch (error) {
+    console.error("Patient Fetch Payments Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch payment history.",
+    });
+  }
+};
+
+module.exports = { getAllPaymentsAdmin, processPayment, getPatientPayments };

@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   getAllPaymentsAdmin,
   processPayment,
+  getPatientPayments,
 } = require("../controllers/paymentController");
 const verifyToken = require("../middleware/verifyToken");
 const verifyAdmin = require("../middleware/verifyAdmin");
@@ -13,5 +14,6 @@ router.get("/admin/all", verifyToken, verifyAdmin, getAllPaymentsAdmin);
 
 // Patient Routes
 router.post("/process", verifyToken, verifyPatient, processPayment);
+router.get("/patient/history", verifyToken, verifyPatient, getPatientPayments);
 
 module.exports = router;
