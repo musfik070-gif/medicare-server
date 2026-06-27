@@ -20,4 +20,25 @@ const getAllAppointmentsAdmin = async (req, res) => {
   }
 };
 
-module.exports = { getAllAppointmentsAdmin };
+// Doctor: Get their specific appointment requests
+const getDoctorAppointments = async (req, res) => {
+  try {
+    const doctorEmail = req.user.email;
+    const appointmentsCollection = await getAppointmentsCollection();
+
+    const appointments = await appointmentsCollection
+      .find({ doctorEmail })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    res.status(200).json({ success: true, data: appointments });
+  } catch (error) {
+    console.error("Doctor Fetch Appointments Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch appointment requests",
+    });
+  }
+};
+
+module.exports = { getAllAppointmentsAdmin, getDoctorAppointments };
