@@ -10,6 +10,7 @@ const healthRoutes = require("./routes/healthRoutes");
 const doctorRoutes = require("./routes/doctorRoutes");
 const appointmentRoutes = require("./routes/appointmentRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
+const reviewRoutes = require("./routes/reviewRoutes");
 
 
 const app = express();
@@ -24,7 +25,7 @@ app.use("/api/home", homeRoutes);
 app.use("/api/doctors", doctorRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/payments", paymentRoutes);
-
+app.use("/api/reviews", reviewRoutes);
 const PORT = process.env.PORT || 5001;
 
 app.get("/", (req, res) => {
