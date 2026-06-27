@@ -3,12 +3,18 @@ const router = express.Router();
 const {
   getAllDoctors,
   getDoctorById,
+  getAdminDoctors,
+  updateDoctorStatus,
 } = require("../controllers/doctorController");
+const verifyToken = require("../middleware/verifyToken");
+const verifyAdmin = require("../middleware/verifyAdmin");
 
-// Public route to browse doctors
+// 1. Public Routes (Anyone can access)
 router.get("/", getAllDoctors);
-
-// Public route to get a single doctor by their ID
 router.get("/:id", getDoctorById);
+
+// 2. Protected Admin Routes (Requires both middlewares)
+router.get("/admin/all", verifyToken, verifyAdmin, getAdminDoctors);
+router.patch("/admin/:id/status", verifyToken, verifyAdmin, updateDoctorStatus);
 
 module.exports = router;
