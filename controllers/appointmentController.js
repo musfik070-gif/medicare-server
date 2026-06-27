@@ -74,8 +74,30 @@ const updateAppointmentStatus = async (req, res) => {
   }
 };
 
+// Patient: Get their own booked appointments
+const getPatientAppointments = async (req, res) => {
+  try {
+    const patientEmail = req.user.email;
+    const appointmentsCollection = await getAppointmentsCollection();
+
+    const appointments = await appointmentsCollection
+      .find({ patientEmail })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    res.status(200).json({ success: true, data: appointments });
+  } catch (error) {
+    console.error("Patient Fetch Appointments Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch your appointments",
+    });
+  }
+};
+
 module.exports = {
   getAllAppointmentsAdmin,
   getDoctorAppointments,
   updateAppointmentStatus,
+  getPatientAppointments,
 };
