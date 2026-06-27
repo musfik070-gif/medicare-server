@@ -1,5 +1,6 @@
 const { ObjectId } = require("mongodb");
 const getAppointmentsCollection = require("../collections/appointmentsCollection");
+const getUsersCollection = require("../collections/usersCollection");
 
 // Admin: Get ALL appointments across the platform
 const getAllAppointmentsAdmin = async (req, res) => {
@@ -95,9 +96,55 @@ const getPatientAppointments = async (req, res) => {
   }
 };
 
+// Patient: Book a new appointment
+const bookAppointment = async (req, res) => {
+  try {
+    const appointmentData = req.body;
+    const patientEmail = req.user.email;
+
+    const usersCollection = await getUsersCollection();
+    const patient = await usersCollection.findOne({ email: patientEmail });
+
+    if (!patient) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Patient user not found." });
+    }
+
+    const newAppointment = {
+      doctorId: appointmentData.doctorId,
+      doctorName: appointmentData.doctorName,
+      doctorEmail: appointmentData.doctorEmail,
+      specialization: appointmentData.specialization,
+      fee: appointmentData.fee,
+      date: appointmentData.date,
+      time: appointmentData.time,
+      patientEmail: patientEmail,
+      patientName: patient.name,
+      status: "Pending",
+      createdAt: new Date(),
+    };
+
+    const appointmentsCollection = await getAppointmentsCollection();
+    const result = await appointmentsCollection.insertOne(newAppointment);
+
+    res.status(201).json({
+      success: true,
+      message: "Appointment booked successfully!",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Booking Error:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to book appointment." });
+  }
+};
+
 module.exports = {
   getAllAppointmentsAdmin,
   getDoctorAppointments,
   updateAppointmentStatus,
   getPatientAppointments,
+  bookAppointment,
 };

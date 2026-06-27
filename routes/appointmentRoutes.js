@@ -5,6 +5,7 @@ const {
   getDoctorAppointments,
   updateAppointmentStatus,
   getPatientAppointments,
+  bookAppointment,
 } = require("../controllers/appointmentController");
 const verifyToken = require("../middleware/verifyToken");
 const verifyAdmin = require("../middleware/verifyAdmin");
@@ -35,5 +36,6 @@ router.get(
   verifyPatient,
   getPatientAppointments,
 );
+router.post("/", verifyToken, verifyPatient, bookAppointment);
 
 module.exports = router;
