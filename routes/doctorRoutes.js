@@ -5,16 +5,23 @@ const {
   getDoctorById,
   getAdminDoctors,
   updateDoctorStatus,
+  getDoctorProfile,
+  updateDoctorProfile,
 } = require("../controllers/doctorController");
 const verifyToken = require("../middleware/verifyToken");
 const verifyAdmin = require("../middleware/verifyAdmin");
+const verifyDoctor = require("../middleware/verifyDoctor");
 
-// 1. Public Routes (Anyone can access)
-router.get("/", getAllDoctors);
-router.get("/:id", getDoctorById);
+// --- PROTECTED DOCTOR ROUTES ---
+router.get("/profile/me", verifyToken, verifyDoctor, getDoctorProfile);
+router.patch("/profile/me", verifyToken, verifyDoctor, updateDoctorProfile);
 
-// 2. Protected Admin Routes (Requires both middlewares)
+// --- PROTECTED ADMIN ROUTES ---
 router.get("/admin/all", verifyToken, verifyAdmin, getAdminDoctors);
 router.patch("/admin/:id/status", verifyToken, verifyAdmin, updateDoctorStatus);
+
+// --- PUBLIC ROUTES ---
+router.get("/", getAllDoctors);
+router.get("/:id", getDoctorById);
 
 module.exports = router;

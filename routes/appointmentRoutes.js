@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   getAllAppointmentsAdmin,
   getDoctorAppointments,
+  updateAppointmentStatus,
 } = require("../controllers/appointmentController");
 const verifyToken = require("../middleware/verifyToken");
 const verifyAdmin = require("../middleware/verifyAdmin");
@@ -17,6 +18,12 @@ router.get(
   verifyToken,
   verifyDoctor,
   getDoctorAppointments,
+);
+router.patch(
+  "/doctor/:id/status",
+  verifyToken,
+  verifyDoctor,
+  updateAppointmentStatus,
 );
 
 module.exports = router;

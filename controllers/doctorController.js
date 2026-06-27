@@ -73,12 +73,10 @@ const getDoctorById = async (req, res) => {
     res.status(200).json({ success: true, data: doctor });
   } catch (error) {
     console.error("Fetch Doctor By ID Error:", error);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Server error fetching doctor details",
-      });
+    res.status(500).json({
+      success: false,
+      message: "Server error fetching doctor details",
+    });
   }
 };
 
@@ -90,7 +88,9 @@ const getAdminDoctors = async (req, res) => {
     res.status(200).json({ success: true, data: doctors });
   } catch (error) {
     console.error("Admin Fetch Doctors Error:", error);
-    res.status(500).json({ success: false, message: "Failed to fetch doctors" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch doctors" });
   }
 };
 
@@ -103,13 +103,18 @@ const updateDoctorStatus = async (req, res) => {
     const doctorsCollection = await getDoctorsCollection();
     const result = await doctorsCollection.updateOne(
       { _id: new ObjectId(id) },
-      { $set: { verificationStatus: status } }
+      { $set: { verificationStatus: status } },
     );
 
     if (result.modifiedCount > 0) {
-      res.status(200).json({ success: true, message: `Doctor status updated to ${status}` });
+      res.status(200).json({
+        success: true,
+        message: `Doctor status updated to ${status}`,
+      });
     } else {
-      res.status(400).json({ success: false, message: "Failed to update status" });
+      res
+        .status(400)
+        .json({ success: false, message: "Failed to update status" });
     }
   } catch (error) {
     console.error("Update Doctor Status Error:", error);
@@ -117,4 +122,54 @@ const updateDoctorStatus = async (req, res) => {
   }
 };
 
-module.exports = { getAllDoctors, getDoctorById, getAdminDoctors, updateDoctorStatus };
+// Doctor: Get own professional profile
+const getDoctorProfile = async (req, res) => {
+  try {
+    const email = req.user.email;
+    const doctorsCollection = await getDoctorsCollection();
+
+    const profile = await doctorsCollection.findOne({ email });
+
+    res.status(200).json({ success: true, data: profile || {} });
+  } catch (error) {
+    console.error("Fetch Doctor Profile Error:", error);
+    res.status(500).json({ success: false, message: "Error fetching profile" });
+  }
+};
+
+// Doctor: Create or Update own professional profile
+const updateDoctorProfile = async (req, res) => {
+  try {
+    const email = req.user.email;
+    const updateData = req.body;
+    const doctorsCollection = await getDoctorsCollection();
+
+    await doctorsCollection.updateOne(
+      { email },
+      {
+        $set: {
+          ...updateData,
+          email,
+        },
+        $setOnInsert: { verificationStatus: "Pending", createdAt: new Date() },
+      },
+      { upsert: true },
+    );
+
+    res
+      .status(200)
+      .json({ success: true, message: "Profile saved successfully" });
+  } catch (error) {
+    console.error("Update Doctor Profile Error:", error);
+    res.status(500).json({ success: false, message: "Error saving profile" });
+  }
+};
+
+module.exports = {
+  getAllDoctors,
+  getDoctorById,
+  getAdminDoctors,
+  updateDoctorStatus,
+  getDoctorProfile,
+  updateDoctorProfile,
+};
