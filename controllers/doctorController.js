@@ -82,4 +82,39 @@ const getDoctorById = async (req, res) => {
   }
 };
 
-module.exports = { getAllDoctors, getDoctorById };
+// Admin: Get ALL doctors (Pending, Verified, Rejected)
+const getAdminDoctors = async (req, res) => {
+  try {
+    const doctorsCollection = await getDoctorsCollection();
+    const doctors = await doctorsCollection.find().toArray();
+    res.status(200).json({ success: true, data: doctors });
+  } catch (error) {
+    console.error("Admin Fetch Doctors Error:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch doctors" });
+  }
+};
+
+// Admin: Update doctor verification status
+const updateDoctorStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body; // Expects "Verified" or "Rejected"
+
+    const doctorsCollection = await getDoctorsCollection();
+    const result = await doctorsCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { verificationStatus: status } }
+    );
+
+    if (result.modifiedCount > 0) {
+      res.status(200).json({ success: true, message: `Doctor status updated to ${status}` });
+    } else {
+      res.status(400).json({ success: false, message: "Failed to update status" });
+    }
+  } catch (error) {
+    console.error("Update Doctor Status Error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+module.exports = { getAllDoctors, getDoctorById, getAdminDoctors, updateDoctorStatus };
