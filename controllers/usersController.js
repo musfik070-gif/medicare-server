@@ -1,4 +1,7 @@
 const getUsersCollection = require("../collections/usersCollection");
+const getAppointmentsCollection = require("../collections/appointmentsCollection");
+const getReviewsCollection = require("../collections/reviewsCollection");
+const getDoctorsCollection = require("../collections/doctorsCollection");
 const { ObjectId } = require("mongodb");
 
 const getAllUsers = async (req, res) => {
@@ -81,9 +84,69 @@ const deleteUser = async (req, res) => {
   }
 };
 
+const getAdminAnalytics = async (req, res) => {
+  try {
+    const usersCollection = await getUsersCollection();
+    const appointmentsCollection = await getAppointmentsCollection();
+    const reviewsCollection = await getReviewsCollection();
+    const doctorsCollection = await getDoctorsCollection();
+
+    const totalPatients = await usersCollection.countDocuments({
+      role: "patient",
+    });
+    const totalDoctors = await usersCollection.countDocuments({
+      role: "doctor",
+    });
+    const totalAppointments = await appointmentsCollection.countDocuments();
+
+    const reviews = await reviewsCollection.find({}).toArray();
+    const doctors = await doctorsCollection
+      .find({ verificationStatus: "Verified" })
+      .toArray();
+
+    const doctorPerformance = doctors.map((doctor) => {
+      const doctorReviews = reviews.filter(
+        (review) =>
+          review.doctorId === doctor._id.toString() ||
+          review.doctorEmail === doctor.email,
+      );
+
+      const avgRating =
+        doctorReviews.length > 0
+          ? doctorReviews.reduce(
+              (sum, review) => sum + Number(review.rating || 0),
+              0,
+            ) / doctorReviews.length
+          : 0;
+
+      return {
+        name: `Dr. ${doctor.name || doctor.doctorName}`,
+        rating: Number(avgRating.toFixed(1)),
+        reviewsCount: doctorReviews.length,
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalPatients,
+        totalDoctors,
+        totalAppointments,
+        doctorPerformance,
+      },
+    });
+  } catch (error) {
+    console.error("Admin Analytics Error:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch analytics." });
+  }
+};
+
 module.exports = {
   getAllUsers,
   createUser,
   updateUserStatus,
   deleteUser,
+  getAdminAnalytics,
 };

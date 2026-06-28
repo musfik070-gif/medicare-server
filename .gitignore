@@ -1,1 +1,5 @@
 .env
+
+GOOGLE_CLIENT_ID=784647375801-r2jri06kruubhv9kkikegskclpbtsbiv.apps.googleusercontent.com
+
+GOOGLE_CLIENT_SECRET=GOCSPX-1234567890abcdefg
