@@ -174,11 +174,11 @@ const addPrescription = async (req, res) => {
   }
 };
 
-// Update Appointment (Cancel or Reschedule)
+// Update Appointment (Status, Reschedule, or Prescription)
 const updateAppointment = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, appointmentDate, appointmentTime } = req.body;
+    const { status, appointmentDate, appointmentTime, prescription } = req.body;
     const appointmentsCollection = await getAppointmentsCollection();
 
     const filter = { _id: new ObjectId(id) };
@@ -187,6 +187,7 @@ const updateAppointment = async (req, res) => {
         ...(status && { status }),
         ...(appointmentDate && { date: appointmentDate }),
         ...(appointmentTime && { time: appointmentTime }),
+        ...(prescription && { prescription }),
       },
     };
 
