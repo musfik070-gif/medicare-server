@@ -1,4 +1,5 @@
 const { ObjectId } = require("mongodb");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const getAppointmentsCollection = require("../collections/appointmentsCollection");
 const getPaymentsCollection = require("../collections/paymentsCollection");
 
@@ -19,6 +20,34 @@ const getAllPaymentsAdmin = async (req, res) => {
     res
       .status(500)
       .json({ success: false, message: "Failed to fetch payment records" });
+  }
+};
+
+const createPaymentIntent = async (req, res) => {
+  try {
+    const { amount } = req.body;
+
+    if (!amount || Number(amount) <= 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Valid payment amount is required." });
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(Number(amount) * 100),
+      currency: "usd",
+      payment_method_types: ["card"],
+    });
+
+    res.status(200).json({
+      success: true,
+      clientSecret: paymentIntent.client_secret,
+    });
+  } catch (error) {
+    console.error("Stripe Payment Intent Error:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to create payment intent." });
   }
 };
 
@@ -85,4 +114,9 @@ const getPatientPayments = async (req, res) => {
   }
 };
 
-module.exports = { getAllPaymentsAdmin, processPayment, getPatientPayments };
+module.exports = {
+  getAllPaymentsAdmin,
+  createPaymentIntent,
+  processPayment,
+  getPatientPayments,
+};
