@@ -8,6 +8,7 @@ const {
   getDoctorProfile,
   updateDoctorProfile,
   updateDoctorSchedule,
+  applyDoctor,
 } = require("../controllers/doctorController");
 const verifyToken = require("../middleware/verifyToken");
 const verifyAdmin = require("../middleware/verifyAdmin");
@@ -17,6 +18,7 @@ const verifyDoctor = require("../middleware/verifyDoctor");
 router.get("/profile/me", verifyToken, verifyDoctor, getDoctorProfile);
 router.patch("/profile/me", verifyToken, verifyDoctor, updateDoctorProfile);
 router.patch("/:id/schedule", verifyToken, verifyDoctor, updateDoctorSchedule);
+router.post("/apply", verifyToken, applyDoctor);
 
 // --- PROTECTED ADMIN ROUTES ---
 router.get("/admin/all", verifyToken, verifyAdmin, getAdminDoctors);

@@ -189,6 +189,46 @@ const updateDoctorSchedule = async (req, res) => {
   }
 };
 
+const applyDoctor = async (req, res) => {
+  try {
+    const { name, email, specialization, experience, fee, photoURL } = req.body;
+    const doctorsCollection = await getDoctorsCollection();
+
+    const existingApp = await doctorsCollection.findOne({ email });
+    if (existingApp) {
+      return res.status(400).json({
+        success: false,
+        message: "You have already applied. Please wait for admin approval.",
+      });
+    }
+
+    const newDoctor = {
+      name,
+      email,
+      specialization,
+      experience,
+      fee: Number(fee),
+      photoURL,
+      verificationStatus: "Pending",
+      availableSlots: [],
+      createdAt: new Date(),
+    };
+
+    const result = await doctorsCollection.insertOne(newDoctor);
+
+    res.status(201).json({
+      success: true,
+      message: "Application submitted successfully!",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Apply Doctor Error:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to submit application." });
+  }
+};
+
 module.exports = {
   getAllDoctors,
   getDoctorById,
@@ -197,4 +237,5 @@ module.exports = {
   getDoctorProfile,
   updateDoctorProfile,
   updateDoctorSchedule,
+  applyDoctor,
 };
