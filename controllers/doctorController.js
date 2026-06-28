@@ -27,12 +27,55 @@ const getAllDoctors = async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     // 5. Fetch the Data from MongoDB
-    const doctors = await doctorsCollection
-      .find(query)
-      .sort(sortOptions)
-      .skip(skip)
-      .limit(parseInt(limit))
-      .toArray();
+    let doctors;
+    if (sort === "ratingDesc") {
+      const pipeline = [
+        { $match: query },
+        {
+          $addFields: {
+            idString: { $toString: "$_id" },
+          },
+        },
+        {
+          $lookup: {
+            from: "reviews",
+            localField: "idString",
+            foreignField: "doctorId",
+            as: "reviews",
+          },
+        },
+        {
+          $addFields: {
+            averageRating: {
+              $cond: {
+                if: { $gt: [{ $size: "$reviews" }, 0] },
+                then: {
+                  $avg: {
+                    $map: {
+                      input: "$reviews",
+                      as: "r",
+                      in: { $toDouble: "$$r.rating" },
+                    },
+                  },
+                },
+                else: 0,
+              },
+            },
+          },
+        },
+        { $sort: { averageRating: -1 } },
+        { $skip: skip },
+        { $limit: parseInt(limit) },
+      ];
+      doctors = await doctorsCollection.aggregate(pipeline).toArray();
+    } else {
+      doctors = await doctorsCollection
+        .find(query)
+        .sort(sortOptions)
+        .skip(skip)
+        .limit(parseInt(limit))
+        .toArray();
+    }
 
     // 6. Get the total count for the frontend pagination buttons
     const totalDoctors = await doctorsCollection.countDocuments(query);
