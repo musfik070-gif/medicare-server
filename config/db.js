@@ -34,4 +34,5 @@ async function connectDB() {
   }
 }
 
+connectDB.client = client;
 module.exports = connectDB;

@@ -15,8 +15,29 @@ const reviewRoutes = require("./routes/reviewRoutes");
 
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    credentials: true,
+  })
+);
+
+app.use((req, res, next) => {
+  console.log(`[REQUEST] ${req.method} ${req.originalUrl}`);
+  next();
+});
+app.use((req, res, next) => {
+  const normalizedPath = req.path.replace(/\/$/, "");
+  const isBetterAuth =
+    normalizedPath.startsWith("/api/auth") &&
+    !["/api/auth/register", "/api/auth/login", "/api/auth/google"].includes(normalizedPath);
+
+  if (isBetterAuth) {
+    next();
+  } else {
+    express.json()(req, res, next);
+  }
+});
 
 app.use("/api/health", healthRoutes);
 app.use("/api/users", usersRoutes);

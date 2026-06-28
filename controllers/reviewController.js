@@ -47,4 +47,24 @@ const getDoctorReviews = async (req, res) => {
   }
 };
 
-module.exports = { addReview, getDoctorReviews };
+const getAllReviews = async (req, res) => {
+  try {
+    const reviewsCollection = await getReviewsCollection();
+
+    const reviews = await reviewsCollection
+      .find({})
+      .sort({ createdAt: -1 })
+      .limit(4)
+      .toArray();
+
+    res.status(200).json({ success: true, data: reviews });
+  } catch (error) {
+    console.error("Fetch All Reviews Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch platform reviews.",
+    });
+  }
+};
+
+module.exports = { addReview, getDoctorReviews, getAllReviews };

@@ -174,6 +174,40 @@ const addPrescription = async (req, res) => {
   }
 };
 
+// Update Appointment (Cancel or Reschedule)
+const updateAppointment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, appointmentDate, appointmentTime } = req.body;
+    const appointmentsCollection = await getAppointmentsCollection();
+
+    const filter = { _id: new ObjectId(id) };
+    const updateDoc = {
+      $set: {
+        ...(status && { status }),
+        ...(appointmentDate && { date: appointmentDate }),
+        ...(appointmentTime && { time: appointmentTime }),
+      },
+    };
+
+    const result = await appointmentsCollection.updateOne(filter, updateDoc);
+
+    if (result.modifiedCount > 0) {
+      res.status(200).json({
+        success: true,
+        message: "Appointment updated successfully.",
+      });
+    } else {
+      res.status(400).json({ success: false, message: "No changes made." });
+    }
+  } catch (error) {
+    console.error("Update Appointment Error:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to update appointment." });
+  }
+};
+
 module.exports = {
   getAllAppointmentsAdmin,
   getDoctorAppointments,
@@ -181,4 +215,5 @@ module.exports = {
   getPatientAppointments,
   bookAppointment,
   addPrescription,
+  updateAppointment,
 };
