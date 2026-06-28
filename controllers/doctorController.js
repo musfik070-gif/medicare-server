@@ -1,4 +1,5 @@
 const getDoctorsCollection = require("../collections/doctorsCollection");
+const getUsersCollection = require("../collections/usersCollection");
 const { ObjectId } = require("mongodb");
 
 const getAllDoctors = async (req, res) => {
@@ -101,24 +102,56 @@ const updateDoctorStatus = async (req, res) => {
     const { status } = req.body; // Expects "Verified" or "Rejected"
 
     const doctorsCollection = await getDoctorsCollection();
-    const result = await doctorsCollection.updateOne(
+    const application = await doctorsCollection.findOne({
+      _id: new ObjectId(id),
+    });
+
+    if (!application) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Application not found." });
+    }
+
+    const doctorUpdate = await doctorsCollection.updateOne(
       { _id: new ObjectId(id) },
       { $set: { verificationStatus: status } },
     );
 
-    if (result.modifiedCount > 0) {
-      res.status(200).json({
-        success: true,
-        message: `Doctor status updated to ${status}`,
-      });
-    } else {
-      res
+    if (status !== "Verified") {
+      if (doctorUpdate.modifiedCount > 0) {
+        return res.status(200).json({
+          success: true,
+          message: `Doctor status updated to ${status}`,
+        });
+      }
+
+      return res
         .status(400)
         .json({ success: false, message: "Failed to update status" });
     }
+
+    const usersCollection = await getUsersCollection();
+    const userUpdate = await usersCollection.updateOne(
+      { email: application.email },
+      { $set: { role: "doctor" } },
+    );
+
+    if (userUpdate.modifiedCount > 0) {
+      return res.status(200).json({
+        success: true,
+        message: "Doctor verified and user role updated to 'doctor'!",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Doctor verified (User role was already doctor).",
+    });
   } catch (error) {
-    console.error("Update Doctor Status Error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("Approve Doctor Error:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to approve doctor." });
   }
 };
 
