@@ -10,10 +10,10 @@ const getHomeData = async (req, res) => {
     const appointmentsCollection = await getAppointmentsCollection();
     const reviewsCollection = await getReviewsCollection();
 
-    // 1. Fetch Featured Doctors (Only verified ones, limit to 3)
+    // 1. Fetch Featured Doctors (Only verified ones, limit to 4)
     const featuredDoctors = await doctorsCollection
       .find({ verificationStatus: "Verified" })
-      .limit(3)
+      .limit(4)
       .toArray();
 
     // 2. Fetch Platform Statistics
