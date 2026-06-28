@@ -12,15 +12,13 @@ const appointmentRoutes = require("./routes/appointmentRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const reviewRoutes = require("./routes/reviewRoutes");
 
-
-
 const app = express();
 
 app.use(
   cors({
     origin: "http://localhost:3000",
     credentials: true,
-  })
+  }),
 );
 
 app.use((req, res, next) => {
@@ -31,7 +29,9 @@ app.use((req, res, next) => {
   const normalizedPath = req.path.replace(/\/$/, "");
   const isBetterAuth =
     normalizedPath.startsWith("/api/auth") &&
-    !["/api/auth/register", "/api/auth/login", "/api/auth/google"].includes(normalizedPath);
+    !["/api/auth/register", "/api/auth/login", "/api/auth/google"].includes(
+      normalizedPath,
+    );
 
   if (isBetterAuth) {
     next();
@@ -48,6 +48,7 @@ app.use("/api/doctors", doctorRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/reviews", reviewRoutes);
+
 const PORT = process.env.PORT || 5001;
 
 app.get("/", (req, res) => {
