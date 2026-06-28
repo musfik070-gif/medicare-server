@@ -3,6 +3,9 @@ const router = express.Router();
 const {
   getAllPaymentsAdmin,
   createPaymentIntent,
+  createCheckoutSession,
+  savePayment,
+  handleCheckoutSuccess,
   processPayment,
   getPatientPayments,
 } = require("../controllers/paymentController");
@@ -20,6 +23,14 @@ router.post(
   verifyPatient,
   createPaymentIntent,
 );
+router.post(
+  "/create-checkout-session",
+  verifyToken,
+  verifyPatient,
+  createCheckoutSession,
+);
+router.get("/checkout-success", handleCheckoutSuccess);
+router.post("/", verifyToken, verifyPatient, savePayment);
 router.post("/process", verifyToken, verifyPatient, processPayment);
 router.get("/patient/history", verifyToken, verifyPatient, getPatientPayments);
 
