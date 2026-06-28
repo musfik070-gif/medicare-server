@@ -165,6 +165,30 @@ const updateDoctorProfile = async (req, res) => {
   }
 };
 
+const updateDoctorSchedule = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { availableSlots } = req.body;
+    const doctorsCollection = await getDoctorsCollection();
+
+    const result = await doctorsCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { availableSlots } },
+    );
+
+    if (result.modifiedCount > 0) {
+      res.status(200).json({ success: true, message: "Schedule updated." });
+    } else {
+      res.status(400).json({ success: false, message: "No changes made." });
+    }
+  } catch (error) {
+    console.error("Update Doctor Schedule Error:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to update schedule." });
+  }
+};
+
 module.exports = {
   getAllDoctors,
   getDoctorById,
@@ -172,4 +196,5 @@ module.exports = {
   updateDoctorStatus,
   getDoctorProfile,
   updateDoctorProfile,
+  updateDoctorSchedule,
 };
