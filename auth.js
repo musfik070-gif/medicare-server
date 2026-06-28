@@ -23,8 +23,8 @@ const auth = betterAuth({
   // Set baseURL for callback redirect URL generation
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:5001",
   basePath: "/api/auth",
-  trustedOrigins: ["http://localhost:3000"],
-  secret: process.env.BETTER_AUTH_SECRET,
+  trustedOrigins: [process.env.CLIENT_URL || "http://localhost:3000"],
+  secret: process.env.BETTER_AUTH_SECRET || process.env.JWT_SECRET,
 });
 
 module.exports = { auth };

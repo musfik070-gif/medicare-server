@@ -131,6 +131,17 @@ const googleLogin = async (req, res) => {
       };
       const result = await usersCollection.insertOne(newUser);
       user = { _id: result.insertedId, ...newUser };
+    } else {
+      const updates = {};
+      if (!user.role) updates.role = "patient";
+      if (!user.status) updates.status = "active";
+      if (!user.photoURL && photoURL) updates.photoURL = photoURL;
+      if (!user.name && name) updates.name = name;
+
+      if (Object.keys(updates).length > 0) {
+        await usersCollection.updateOne({ _id: user._id }, { $set: updates });
+        user = { ...user, ...updates };
+      }
     }
 
     const token = generateToken({
