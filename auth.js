@@ -6,6 +6,8 @@ const connectDB = require("./config/db");
 const client = connectDB.client;
 const db = client.db("medicareDB");
 
+const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000";
+
 const auth = betterAuth({
   database: mongodbAdapter(db, {
     client: client,
@@ -14,16 +16,19 @@ const auth = betterAuth({
       user: "users",
     },
   }),
+  baseURL: process.env.BETTER_AUTH_URL,
+  trustedOrigins: [
+    "https://medicare-client-gamma.vercel.app",
+    "http://localhost:3000"
+  ],
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      redirectURI: `${process.env.BETTER_AUTH_URL}/api/auth/callback/google`
     },
   },
-  // Set baseURL for callback redirect URL generation
-  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:5001",
   basePath: "/api/auth",
-  trustedOrigins: [process.env.CLIENT_URL || "http://localhost:3000"],
   secret: process.env.BETTER_AUTH_SECRET || process.env.JWT_SECRET,
 });
 

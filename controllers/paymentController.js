@@ -112,7 +112,7 @@ const createCheckoutSession = async (req, res) => {
         doctorName: appointment.doctorName || "",
       },
       success_url: `${SERVER_URL}/api/payments/checkout-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${CLIENT_URL}/dashboard/patient/appointments`,
+      cancel_url: `${CLIENT_URL}/dashboard/patient/appointments?payment=cancelled`,
     });
 
     res.status(200).json({ success: true, url: session.url });
