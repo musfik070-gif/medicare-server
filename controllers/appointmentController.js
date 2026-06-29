@@ -52,10 +52,10 @@ const updateAppointmentStatus = async (req, res) => {
     const appointmentsCollection = await getAppointmentsCollection();
     const result = await appointmentsCollection.updateOne(
       { _id: new ObjectId(id) },
-      { $set: { status } },
+      { $set: { status, appointmentStatus: status } },
     );
 
-    if (result.modifiedCount > 0) {
+    if (result.matchedCount > 0) {
       res.status(200).json({
         success: true,
         message: `Appointment status updated to ${status}`,
