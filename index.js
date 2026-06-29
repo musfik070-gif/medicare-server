@@ -14,23 +14,17 @@ const reviewRoutes = require("./routes/reviewRoutes");
 
 const app = express();
 
-const allowedOrigins = [
-  "http://localhost:3000",
-  process.env.CLIENT_URL,
-].filter(Boolean);
+app.use(cors({
+  origin: [
+    "https://medicare-client-gamma.vercel.app",
+    "http://localhost:3000"
+  ],
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "Cookie"]
+}));
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    credentials: true,
-  }),
-);
+app.set("trust proxy", 1);
 
 app.use((req, res, next) => {
   console.log(`[REQUEST] ${req.method} ${req.originalUrl}`);

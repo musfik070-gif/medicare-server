@@ -21,6 +21,17 @@ const auth = betterAuth({
     "https://medicare-client-gamma.vercel.app",
     "http://localhost:3000"
   ],
+  advanced: {
+    crossSubdomainCookies: {
+      enabled: false
+    },
+    defaultCookieAttributes: {
+      secure: true,
+      httpOnly: true,
+      sameSite: "none",
+      partitioned: true
+    }
+  },
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID,
