@@ -5,6 +5,7 @@ const authRoutes = require("./routes/authRoutes");
 const homeRoutes = require("./routes/homeRoutes");
 const express = require("express");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
 const connectDB = require("./config/db");
 const healthRoutes = require("./routes/healthRoutes");
 const doctorRoutes = require("./routes/doctorRoutes");
@@ -13,18 +14,27 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const reviewRoutes = require("./routes/reviewRoutes");
 
 const app = express();
-
 app.set("trust proxy", 1);
+app.enable("trust proxy");
 
 app.use(cors({
-  origin: [
-    "https://medicare-client-gamma.vercel.app",
-    "http://localhost:3000"
-  ],
+  origin: function(origin, callback) {
+    const allowedOrigins = [
+      "https://medicare-client-gamma.vercel.app",
+      "http://localhost:3000"
+    ];
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith(".vercel.app")) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "Cookie"]
+  allowedHeaders: ["Content-Type", "Authorization", "Cookie", "Set-Cookie"]
 }));
+
+app.use(cookieParser());
 
 app.use((req, res, next) => {
   console.log(`[REQUEST] ${req.method} ${req.originalUrl}`);
@@ -55,6 +65,10 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/reviews", reviewRoutes);
 
 const PORT = process.env.PORT || 5001;
+
+app.get("/ping", (req, res) => {
+  res.status(200).json({ status: "alive", timestamp: new Date().toISOString() });
+});
 
 app.get("/", (req, res) => {
   res.send("🚀 MediCare Server Running");

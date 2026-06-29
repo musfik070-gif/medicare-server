@@ -30,7 +30,9 @@ const auth = betterAuth({
       httpOnly: true,
       sameSite: "none",
       partitioned: true
-    }
+    },
+    useSecureCookies: true,
+    disableCSRFCheck: false,
   },
   socialProviders: {
     google: {
@@ -40,7 +42,7 @@ const auth = betterAuth({
     },
   },
   basePath: "/api/auth",
-  secret: process.env.BETTER_AUTH_SECRET || process.env.JWT_SECRET,
+  secret: process.env.BETTER_AUTH_SECRET,
 });
 
 module.exports = { auth };
