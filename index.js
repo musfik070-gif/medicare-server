@@ -14,6 +14,8 @@ const reviewRoutes = require("./routes/reviewRoutes");
 
 const app = express();
 
+app.set("trust proxy", 1);
+
 app.use(cors({
   origin: [
     "https://medicare-client-gamma.vercel.app",
@@ -23,8 +25,6 @@ app.use(cors({
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "Cookie"]
 }));
-
-app.set("trust proxy", 1);
 
 app.use((req, res, next) => {
   console.log(`[REQUEST] ${req.method} ${req.originalUrl}`);
