@@ -6,7 +6,12 @@ const connectDB = require("./config/db");
 const client = connectDB.client;
 const db = client.db("medicareDB");
 
-const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000";
+const SERVER_URL =
+  process.env.BETTER_AUTH_URL ||
+  process.env.SERVER_URL ||
+  "http://localhost:5001";
+const CLIENT_URL =
+  process.env.CLIENT_URL || "https://medicare-client-gamma.vercel.app";
 
 const auth = betterAuth({
   database: mongodbAdapter(db, {
@@ -16,33 +21,31 @@ const auth = betterAuth({
       user: "users",
     },
   }),
-  baseURL: process.env.BETTER_AUTH_URL,
+  baseURL: SERVER_URL,
   trustedOrigins: [
-    "https://medicare-client-gamma.vercel.app",
-    "http://localhost:3000"
+    CLIENT_URL,
+    "http://localhost:3000",
   ],
+  account: {
+    skipStateCookieCheck: true,
+  },
   advanced: {
-    crossSubdomainCookies: {
-      enabled: false
-    },
+    useSecureCookies: SERVER_URL.startsWith("https://"),
+    trustedProxyHeaders: true,
     defaultCookieAttributes: {
-      secure: true,
-      httpOnly: true,
       sameSite: "none",
-      partitioned: true
+      secure: true,
     },
-    useSecureCookies: true,
-    disableCSRFCheck: false,
   },
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      redirectURI: `${process.env.BETTER_AUTH_URL}/api/auth/callback/google`
+      redirectURI: `${SERVER_URL}/api/auth/callback/google`,
     },
   },
   basePath: "/api/auth",
-  secret: process.env.BETTER_AUTH_SECRET,
+  secret: process.env.BETTER_AUTH_SECRET || process.env.JWT_SECRET,
 });
 
 module.exports = { auth };
