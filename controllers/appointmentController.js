@@ -1,6 +1,7 @@
 const { ObjectId } = require("mongodb");
 const getAppointmentsCollection = require("../collections/appointmentsCollection");
 const getUsersCollection = require("../collections/usersCollection");
+const getDoctorsCollection = require("../collections/doctorsCollection");
 
 // Admin: Get ALL appointments across the platform
 const getAllAppointmentsAdmin = async (req, res) => {
@@ -111,6 +112,54 @@ const bookAppointment = async (req, res) => {
         .json({ success: false, message: "Patient user not found." });
     }
 
+    // 1. Fetch Doctor and verify details
+    const doctorsCollection = await getDoctorsCollection();
+    const doctor = await doctorsCollection.findOne({ _id: new ObjectId(appointmentData.doctorId) });
+    if (!doctor) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Doctor not found." });
+    }
+
+    // 2. Timezone-safe Available Day check
+    if (appointmentData.date) {
+      const [year, month, day] = appointmentData.date.split("-").map(Number);
+      // Construct date as UTC to prevent timezone shift issues
+      const bookingDateObj = new Date(Date.UTC(year, month - 1, day));
+      const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      const bookingDay = daysOfWeek[bookingDateObj.getUTCDay()];
+
+      if (doctor.availableDays && doctor.availableDays.length > 0 && !doctor.availableDays.includes(bookingDay)) {
+        return res
+          .status(400)
+          .json({ success: false, message: `Doctor is not available on ${bookingDay}s.` });
+      }
+    }
+
+    // 3. Available Slots check
+    if (doctor.availableSlots && doctor.availableSlots.length > 0) {
+      if (!doctor.availableSlots.includes(appointmentData.time)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "The selected time slot is not available in the doctor's schedule." });
+      }
+    }
+
+    // 4. Overlap / Conflict detection (no duplicate active appointments for same date/time)
+    const appointmentsCollection = await getAppointmentsCollection();
+    const existingAppointment = await appointmentsCollection.findOne({
+      doctorId: appointmentData.doctorId,
+      date: appointmentData.date,
+      time: appointmentData.time,
+      status: { $ne: "Cancelled" },
+    });
+
+    if (existingAppointment) {
+      return res
+        .status(400)
+        .json({ success: false, message: "This time slot is already booked. Please choose another time." });
+    }
+
     const newAppointment = {
       doctorId: appointmentData.doctorId,
       doctorName: appointmentData.doctorName,
@@ -125,7 +174,6 @@ const bookAppointment = async (req, res) => {
       createdAt: new Date(),
     };
 
-    const appointmentsCollection = await getAppointmentsCollection();
     const result = await appointmentsCollection.insertOne(newAppointment);
 
     res.status(201).json({

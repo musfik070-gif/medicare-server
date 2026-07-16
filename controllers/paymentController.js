@@ -119,7 +119,7 @@ const createCheckoutSession = async (req, res) => {
         doctorId: appointment.doctorId || "",
         doctorName: appointment.doctorName || "",
       },
-      success_url: `${SERVER_URL}/api/payments/checkout-success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${CLIENT_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${CLIENT_URL}/dashboard/patient/appointments?payment=cancelled`,
     });
 
@@ -327,6 +327,69 @@ const handleStripeWebhook = async (req, res) => {
   }
 };
 
+const verifyCheckoutSession = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+
+    if (!sessionId) {
+      return res.status(400).json({ success: false, message: "Session ID is required." });
+    }
+
+    const session = await getStripe().checkout.sessions.retrieve(sessionId);
+    if (session.payment_status !== "paid") {
+      return res.status(400).json({ success: false, message: "Payment not completed." });
+    }
+
+    const appointmentId = session.metadata?.appointmentId;
+    if (!appointmentId) {
+      return res.status(400).json({ success: false, message: "Appointment metadata missing from session." });
+    }
+
+    const paymentsCollection = await getPaymentsCollection();
+    let payment = await paymentsCollection.findOne({
+      transactionId: session.payment_intent,
+    });
+
+    if (!payment) {
+      payment = {
+        appointmentId,
+        transactionId: session.payment_intent,
+        patientEmail: session.metadata?.patientEmail || "",
+        patientName: session.metadata?.patientName || "",
+        doctorId: session.metadata?.doctorId || "",
+        doctorName: session.metadata?.doctorName || "",
+        amount: Number(session.amount_total) / 100,
+        status: "Paid",
+        paymentProvider: "stripe",
+        checkoutSessionId: session.id,
+        createdAt: new Date(),
+      };
+      await paymentsCollection.insertOne(payment);
+    }
+
+    const appointmentsCollection = await getAppointmentsCollection();
+    await appointmentsCollection.updateOne(
+      { _id: new ObjectId(appointmentId) },
+      {
+        $set: {
+          status: "Paid",
+          appointmentStatus: "Paid",
+          transactionId: session.payment_intent,
+        },
+      },
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Payment verified successfully!",
+      data: payment,
+    });
+  } catch (error) {
+    console.error("Stripe Session Verification Error:", error);
+    res.status(500).json({ success: false, message: "Verification failed." });
+  }
+};
+
 module.exports = {
   getAllPaymentsAdmin,
   createPaymentIntent,
@@ -336,4 +399,5 @@ module.exports = {
   processPayment,
   getPatientPayments,
   handleStripeWebhook,
+  verifyCheckoutSession,
 };

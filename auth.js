@@ -33,8 +33,8 @@ const auth = betterAuth({
     useSecureCookies: SERVER_URL.startsWith("https://"),
     trustedProxyHeaders: true,
     defaultCookieAttributes: {
-      sameSite: "none",
-      secure: true,
+      sameSite: SERVER_URL.startsWith("https://") ? "none" : "lax",
+      secure: SERVER_URL.startsWith("https://"),
     },
   },
   socialProviders: {
