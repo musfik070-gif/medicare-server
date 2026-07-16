@@ -8,10 +8,14 @@ const {
   handleCheckoutSuccess,
   processPayment,
   getPatientPayments,
+  handleStripeWebhook,
 } = require("../controllers/paymentController");
 const verifyToken = require("../middleware/verifyToken");
 const verifyAdmin = require("../middleware/verifyAdmin");
 const verifyPatient = require("../middleware/verifyPatient");
+
+// Stripe Webhook (must use raw body parser, no auth — Stripe signs the request)
+router.post("/webhook", express.raw({ type: "application/json" }), handleStripeWebhook);
 
 // Admin Routes
 router.get("/admin/all", verifyToken, verifyAdmin, getAllPaymentsAdmin);

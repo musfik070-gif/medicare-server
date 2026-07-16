@@ -247,15 +247,45 @@ const updateDoctorSchedule = async (req, res) => {
     const { availableSlots } = req.body;
     const doctorsCollection = await getDoctorsCollection();
 
+    // Input validation: availableSlots must be an array
+    if (!Array.isArray(availableSlots)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "availableSlots must be an array." });
+    }
+
+    // Check for duplicate time slots
+    const uniqueSlots = [...new Set(availableSlots)];
+    if (uniqueSlots.length !== availableSlots.length) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Duplicate time slots are not allowed." });
+    }
+
+    // Ownership validation: verify the logged-in doctor owns this document
+    const doctor = await doctorsCollection.findOne({ _id: new ObjectId(id) });
+    if (!doctor) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Doctor not found." });
+    }
+
+    if (doctor.email !== req.user.email) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Forbidden. You can only update your own schedule." });
+    }
+
     const result = await doctorsCollection.updateOne(
       { _id: new ObjectId(id) },
       { $set: { availableSlots } },
     );
 
-    if (result.modifiedCount > 0) {
+    // Use matchedCount instead of modifiedCount so idempotent updates succeed
+    if (result.matchedCount > 0) {
       res.status(200).json({ success: true, message: "Schedule updated." });
     } else {
-      res.status(400).json({ success: false, message: "No changes made." });
+      res.status(404).json({ success: false, message: "Doctor not found." });
     }
   } catch (error) {
     console.error("Update Doctor Schedule Error:", error);

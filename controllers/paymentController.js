@@ -1,7 +1,15 @@
 const { ObjectId } = require("mongodb");
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const getAppointmentsCollection = require("../collections/appointmentsCollection");
 const getPaymentsCollection = require("../collections/paymentsCollection");
+
+// Lazy-initialize Stripe to ensure env vars are loaded before first use
+let stripeInstance = null;
+function getStripe() {
+  if (!stripeInstance) {
+    stripeInstance = require("stripe")(process.env.STRIPE_SECRET_KEY);
+  }
+  return stripeInstance;
+}
 
 const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000";
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:5001";
@@ -37,7 +45,7 @@ const createPaymentIntent = async (req, res) => {
         .json({ success: false, message: "Valid payment amount is required." });
     }
 
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntent = await getStripe().paymentIntents.create({
       amount: Math.round(paymentAmount * 100),
       currency: "usd",
       payment_method_types: ["card"],
@@ -89,7 +97,7 @@ const createCheckoutSession = async (req, res) => {
         .json({ success: false, message: "Valid payment amount is required." });
     }
 
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
       line_items: [
@@ -138,7 +146,7 @@ const savePayment = async (req, res) => {
     const newPayment = {
       ...payment,
       patientEmail: payment.patientEmail || patientEmail,
-      amount: payment.amount || payment.price || payment.fee,
+      amount: Number(payment.amount || payment.price || payment.fee),
       status: "Paid",
       createdAt: new Date(),
     };
@@ -180,7 +188,7 @@ const handleCheckoutSuccess = async (req, res) => {
       return res.redirect(`${CLIENT_URL}/dashboard/patient/appointments`);
     }
 
-    const session = await stripe.checkout.sessions.retrieve(session_id);
+    const session = await getStripe().checkout.sessions.retrieve(session_id);
     if (session.payment_status !== "paid") {
       return res.redirect(`${CLIENT_URL}/dashboard/patient/appointments`);
     }
@@ -254,6 +262,71 @@ const getPatientPayments = async (req, res) => {
   }
 };
 
+// Stripe Webhook handler
+const handleStripeWebhook = async (req, res) => {
+  const sig = req.headers["stripe-signature"];
+  const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  let event;
+  try {
+    if (endpointSecret && sig) {
+      event = getStripe().webhooks.constructEvent(req.body, sig, endpointSecret);
+    } else {
+      event = req.body;
+    }
+  } catch (err) {
+    console.error("Webhook signature verification failed:", err.message);
+    return res.status(400).json({ success: false, message: `Webhook Error: ${err.message}` });
+  }
+
+  try {
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object;
+      const appointmentId = session.metadata?.appointmentId;
+
+      if (appointmentId) {
+        const paymentsCollection = await getPaymentsCollection();
+        const existingPayment = await paymentsCollection.findOne({
+          transactionId: session.payment_intent,
+        });
+
+        if (!existingPayment) {
+          await paymentsCollection.insertOne({
+            appointmentId,
+            transactionId: session.payment_intent,
+            patientEmail: session.metadata?.patientEmail || "",
+            patientName: session.metadata?.patientName || "",
+            doctorId: session.metadata?.doctorId || "",
+            doctorName: session.metadata?.doctorName || "",
+            amount: Number(session.amount_total) / 100,
+            status: "Paid",
+            paymentProvider: "stripe",
+            checkoutSessionId: session.id,
+            createdAt: new Date(),
+          });
+        }
+
+        const appointmentsCollection = await getAppointmentsCollection();
+        await appointmentsCollection.updateOne(
+          { _id: new ObjectId(appointmentId) },
+          {
+            $set: {
+              status: "Paid",
+              appointmentStatus: "Paid",
+              transactionId: session.payment_intent,
+            },
+          },
+        );
+      }
+    }
+
+    res.status(200).json({ received: true });
+  } catch (error) {
+    console.error("Webhook Processing Error:", error);
+    res.status(500).json({ success: false, message: "Webhook processing failed" });
+  }
+};
+
 module.exports = {
   getAllPaymentsAdmin,
   createPaymentIntent,
@@ -262,4 +335,5 @@ module.exports = {
   handleCheckoutSuccess,
   processPayment,
   getPatientPayments,
+  handleStripeWebhook,
 };
